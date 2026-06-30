@@ -1,1 +1,27 @@
+name: Terraform PR Checks
 
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "environments/dev/**"
+      - "modules/**"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-pr:
+  runs-on: ubuntu-latest
+  environment: dev
+
+  defaults:
+    run:
+      working-directory: environment/dev
+
+  env:
+    ARM_CLEINT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+    
