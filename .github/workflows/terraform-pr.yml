@@ -15,20 +15,42 @@ permissions:
 
 jobs:
   terraform-pr:
-  runs-on: ubuntu-latest
-  environment: dev
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    environment: dev
 
-  defaults:
-    run:
-      working-directory: environments/dev
+    defaults:
+      run:
+        working-directory: environments/dev
 
-  env:
-    ARM_CLEINT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-    ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-    ARM_SUBSCRIPTION_ID: $(( secrets.AZURE_SUBSCRIPTION_ID }}
-    ARM_USE_OIDC: true
-
-  steps:
-    - name: Checkout repository
-    uses: 
-    
+    env:
+      ARM_CLEINT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: $(( secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: true
+  
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      - name: Azure login using OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: $(( secrets.AZURE_SUBSCRIPTION_ID }}
+  
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+  
+      - name: Terraform format check
+        run: terraform fmt -check -recursive
+  
+      - name: Terraform init
+        run: terraform init
+  
+      - name: Terraform validate
+        run: terraform validate
+  
+      - name: Terraform plan
+        run: terraform plan -out=tfplan
