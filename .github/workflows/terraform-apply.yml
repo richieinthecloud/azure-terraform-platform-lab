@@ -1,1 +1,25 @@
+name: Terraform Apply
 
+on: 
+  push:
+    branches:
+      - main
+    paths:
+      - "environment/dev/**"
+      - "modules/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform-apply:
+    name: Terraform Apply Dev
+    runs-on: ubuntu-latest
+    environment: dev
+
+    defaults:
+      run:
+        working-directory: environments/dev
+
+    env:
