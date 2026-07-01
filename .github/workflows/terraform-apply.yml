@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "environment/dev/**"
+      - "environments/dev/**"
       - "modules/**"
 
 permissions:
