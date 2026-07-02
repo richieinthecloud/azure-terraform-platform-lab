@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "environments/dev/**"
-      - "modules/**"
+      - "Environments/Dev/**"
+      - "Modules/**"
 
 permissions:
   id-token: write
@@ -20,7 +20,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: environments/dev
+        working-directory: Environments/Dev
 
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@4
+        uses: actions/checkout@v4
 
       - name: Azure login using OIDC
         uses: azure/login@v2
