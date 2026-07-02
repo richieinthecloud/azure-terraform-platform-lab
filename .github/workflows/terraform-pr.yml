@@ -17,7 +17,7 @@ jobs:
   terraform-pr:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    environment: dev
+    environment: Dev
 
     defaults:
       run:
