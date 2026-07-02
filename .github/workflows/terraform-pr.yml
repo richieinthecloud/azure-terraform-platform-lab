@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - "Environments/Dev/**"
-      - "Modules/**"
+      - "environments/dev/**"
+      - "modules/**"
 
 permissions:
   id-token: write
@@ -17,11 +17,11 @@ jobs:
   terraform-pr:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    environment: Dev
+    environment: dev
 
     defaults:
       run:
-        working-directory: Environments/Dev
+        working-directory: environments/dev
 
     env:
       ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
