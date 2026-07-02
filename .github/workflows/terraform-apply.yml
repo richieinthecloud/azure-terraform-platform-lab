@@ -16,7 +16,7 @@ jobs:
   terraform-apply:
     name: Terraform Apply Dev
     runs-on: ubuntu-latest
-    environment: dev
+    environment: Dev
 
     defaults:
       run:
