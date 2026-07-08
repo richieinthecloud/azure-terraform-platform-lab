@@ -6,6 +6,7 @@
 
 ## This repo is still an active work in progress 🖥️🔑
 - What is to come: App Gateway/WAF, VM Scale Set, Key Vault, and private-endpoint PostGreSQL
+- Hub-n-Spoke topology
 
 # Why this project exists
 
