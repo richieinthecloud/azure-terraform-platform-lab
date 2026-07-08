@@ -1,21 +1,21 @@
-# Azure Terraform Platform Lab
+# Azure Terraform Platform Lab ☁️☁️
 ## In this project, I am architecting an environment that simulates the processes corporate environments use to deploy Infrastructure as Code (IaC)
 - Utilizing Github Actions, we can implement an automated CI/CD pipeline that double-checks our Terraform code and highlights errors within our deployments
 - A pull request gets created with every push action. Said pull request can then be reviewed by a senior engineer, approved and then deployed to the actual dev environment resource group in Azure
 - The pipeline uses OIDC federated authentication so that we store no long-lived secrets for communication.
 
-## This repo is still an active work in progress
+## This repo is still an active work in progress 🖥️🔑
 - What is to come: App Gateway/WAF, VM Scale Set, Key Vault, and private-endpoint PostGreSQL
 
 # Why this project exists
 
 I built this to get real, hands-on experience with the same patterns used in production cloud environments: modular IaC, environment separation (dev/prod), and a CI/CD pipeline that enforces validation before anything touches live infrastructure. Rather than just study Azure concepts for AZ-104, I wanted to prove them out end-to-end — write the Terraform, break the pipeline, fix it, and understand why it broke.
 
-# CI/CD Pipeline
+# CI/CD Pipeline 
 
 The pipeline is built on two GitHub Actions workflows that separate validation from deployment — a deliberate choice to make sure nothing gets applied to Azure without first passing checks in an open pull request.
 
-## 1. PR Checks (terraform-pr.yml)
+## 1. PR Checks (terraform-pr.yml) 
 
 Triggered on every pull request targeting main. This workflow:
 
@@ -48,7 +48,7 @@ Debugging this taught me to think about CI/CD pipelines the way I'd think about 
 Tech stack
 
 
-Terraform — infrastructure as code
-GitHub Actions — CI/CD orchestration
-Azure OIDC / Workload Identity Federation — secretless authentication
-Azure — target cloud platform (networking, storage; more modules in progress)
+Terraform — infrastructure as code 🌎
+GitHub Actions — CI/CD orchestration 🤖
+Azure OIDC / Workload Identity Federation — secretless authentication 🪪
+Azure — target cloud platform (networking, storage; more modules in progress) ☁️
