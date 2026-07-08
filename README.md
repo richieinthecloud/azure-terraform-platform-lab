@@ -11,21 +11,6 @@
 
 I built this to get real, hands-on experience with the same patterns used in production cloud environments: modular IaC, environment separation (dev/prod), and a CI/CD pipeline that enforces validation before anything touches live infrastructure. Rather than just study Azure concepts for AZ-104, I wanted to prove them out end-to-end — write the Terraform, break the pipeline, fix it, and understand why it broke.
 
-# Architecture
-
-azure-terraform-platform-lab/
-├── modules/
-│   ├── networking/     # VNet, subnets, NSGs
-│   └── storage/        # Storage account configuration
-├── environments/
-│   ├── dev/             # Dev environment root config
-│   └── prod/            # Prod environment root config
-└── .github/workflows/
-    ├── terraform-pr.yml     # Validation on pull request
-    └── terraform-apply.yml  # Deploy on merge to main
-
------------------------------------------------
-
 # CI/CD Pipeline
 
 The pipeline is built on two GitHub Actions workflows that separate validation from deployment — a deliberate choice to make sure nothing gets applied to Azure without first passing checks in an open pull request.
