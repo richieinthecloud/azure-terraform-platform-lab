@@ -2,7 +2,7 @@
 ## In this project, I am architecting an environment that simulates the processes corporate environments use to deploy Infrastructure as Code (IaC)
 - Utilizing Github Actions, we can implement an automated CI/CD pipeline that double-checks our Terraform code and highlights errors within our deployments
 - A pull request gets created with every push action. Said pull request can then be reviewed by a senior engineer, approved and then deployed to the actual dev environment resource group in Azure
-- The pipeline uses OIDC federated authentication so that we store no long-lived secrets for communication.
+- We work within a safe Landing Zone and the pipeline uses OIDC federated authentication so that we store no long-lived secrets for communication.
 
 ## This repo is still an active work in progress 🖥️🔑
 - What is to come: App Gateway/WAF, VM Scale Set, Key Vault, and private-endpoint PostGreSQL
