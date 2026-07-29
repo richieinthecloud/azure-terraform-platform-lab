@@ -3,4 +3,4 @@ resource "azurerm_resource_group" "DemoRG" {
   location = "East US"
 }
 
-# workflow trigger test
+# today is july 2nd
