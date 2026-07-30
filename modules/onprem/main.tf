@@ -66,16 +66,16 @@ resource "azurerm_network_security_group" "strongswan" {
   }
 
   security_rule {
-  name                       = "Allow-SSH-from-admin"
-  priority                   = 1010
-  direction                  = "Inbound"
-  access                     = "Allow"
-  protocol                   = "Tcp"
-  source_port_range          = "*"
-  destination_port_range     = "22"
-  source_address_prefix      = var.admin_source_ip   # e.g. "203.0.113.10/32"
-  destination_address_prefix = "*"
-}
+    name                       = "Allow-SSH-from-admin"
+    priority                   = 1010
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = var.admin_source_ip   # e.g. "203.0.113.10/32"
+    destination_address_prefix = "*"
+  }
 }
 
 resource "azurerm_network_interface" "strongswan" {
