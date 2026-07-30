@@ -59,6 +59,11 @@ variable "vm_size" {
   default     = "Standard_B1s"
 }
 
+variable "admin_source_ip" {
+  description = "Source IP of the device trying to SSH into the on-prem VM."
+  type = string
+}
+
 variable "tags" {
   description = "Tags applied to on-prem resources."
   type        = map(string)
