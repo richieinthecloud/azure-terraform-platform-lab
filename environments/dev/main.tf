@@ -86,6 +86,7 @@ module "onprem" {
   vpn_shared_key          = var.vpn_shared_key
   admin_username          = var.admin_username
   ssh_public_key          = var.ssh_public_key
+  admin_source_ip         = var.admin_source_ip
   tags                    = var.tags
 }
 
@@ -138,7 +139,7 @@ resource "azurerm_monitor_diagnostic_setting" "firewall" {
     category_group = "allLogs"
   }
 
-  metric {
+  enabled_metric {
     category = "AllMetrics"
   }
 }
@@ -154,7 +155,7 @@ resource "azurerm_monitor_diagnostic_setting" "bastion" {
     category_group = "allLogs"
   }
 
-  metric {
+  enabled_metric {
     category = "AllMetrics"
   }
 }

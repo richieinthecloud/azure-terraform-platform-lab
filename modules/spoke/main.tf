@@ -103,6 +103,8 @@ resource "azurerm_virtual_network_peering" "spoke_to_hub" {
   allow_gateway_transit        = false
   use_remote_gateways          = var.use_remote_gateways
   allow_virtual_network_access = true
+
+  depends_on = [azurerm_virtual_network_peering.hub_to_spoke]
 }
 
 resource "azurerm_virtual_network_peering" "hub_to_spoke" {

@@ -34,6 +34,11 @@ variable "ssh_public_key" {
   type        = string
 }
 
+variable "admin_source_ip" {
+  description = "Source IP of the device trying to SSH into the on-prem VM."
+  type        = string
+}
+
 variable "tags" {
   description = "Base tags for all dev resources."
   type        = map(string)
