@@ -1,0 +1,49 @@
+# Configures this VM as the "on-prem" IPsec VPN device using StrongSwan.
+# Rendered by Terraform: the Azure gateway IP, subnets and PSK are injected.
+package_update: true
+packages:
+  - strongswan
+
+write_files:
+  # Enable IP forwarding so this box routes for the on-prem LAN.
+  - path: /etc/sysctl.d/99-ipforward.conf
+    content: |
+      net.ipv4.ip_forward=1
+
+  - path: /etc/ipsec.conf
+    content: |
+      config setup
+        charondebug="ike 1, knl 1, cfg 0"
+
+      conn azure
+        auto=start
+        type=tunnel
+        keyexchange=ikev2
+        authby=secret
+        # No trailing "!" so StrongSwan can NEGOTIATE with Azure's default policy.
+        # (A Basic-SKU VPN gateway only supports Azure's default IPsec/IKE policy;
+        # custom policies require VpnGw1+.) Multiple proposals improve the odds.
+        ike=aes256-sha256-modp1024,aes256-sha1-modp1024
+        esp=aes256-sha256,aes256-sha1
+        # Left = this on-prem device; right = the Azure VPN gateway.
+        left=%defaultroute
+        leftid=${onprem_gateway_public_ip}
+        leftsubnet=${onprem_address_space}
+        right=${azure_gateway_public_ip}
+        rightid=${azure_gateway_public_ip}
+        rightsubnet=${azure_subnets}
+        dpdaction=restart
+        dpddelay=30s
+        ikelifetime=28800s
+        lifetime=27000s
+
+  - path: /etc/ipsec.secrets
+    permissions: "0600"
+    content: |
+      ${onprem_gateway_public_ip} ${azure_gateway_public_ip} : PSK "${vpn_shared_key}"
+
+runcmd:
+  - sysctl -p /etc/sysctl.d/99-ipforward.conf
+  - systemctl enable strongswan-starter
+  - systemctl restart strongswan-starter
+  - ipsec restart

@@ -1,16 +1,16 @@
 output "resource_group_name" {
   description = "Spoke resource group name."
-  value = azurerm_resource_group.spoke1.name
+  value = azurerm_resource_group.spoke.name
 }
 
 output "vnet_id" {
-  description = "Spoke1 Vnet ID."
-  value = azurerm_virtual_network.spoke1.id
+  description = "spoke Vnet ID."
+  value = azurerm_virtual_network.spoke.id
 }
 
 output "vnet_name" {
-  description = "Spoke1 Vnet name."
-  value = azurerm_virtual_network.spoke1.name
+  description = "spoke Vnet name."
+  value = azurerm_virtual_network.spoke.name
 }
 
 output "subnet_ids" {

@@ -18,6 +18,16 @@ output "firewall_private_ip" {
   value = azurerm_firewall.hub.ip_configuration[0].private_ip_address
 }
 
+output "firewall_id" {
+  description = "Azure Firewall resource ID (target for diagnostic settings)."
+  value = azurerm_firewall.hub.id
+}
+
+output "bastion_id" {
+  description = "Azure Bastion resource ID (target for diagnostic settings)."
+  value = azurerm_bastion_host.hub.id
+}
+
 output "vpn_gateway_id" {
   description = "VPN Gateway resource ID (used by the S2S connection)."
   value = azurerm_virtual_network_gateway.hub.id

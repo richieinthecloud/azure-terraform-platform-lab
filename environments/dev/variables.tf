@@ -1,1 +1,46 @@
 
+variable "location" {
+  description = "Azure region for the dev environment."
+  type        = string
+  default     = "eastus"
+}
+
+variable "env" {
+  description = "Environment slug."
+  type        = string
+  default     = "dev"
+}
+
+variable "vpn_gateway_sku" {
+  description = "VPN Gateway SKU (Basic = cheapest; VpnGw1 for BGP/P2S)."
+  type        = string
+  default     = "Basic"
+}
+
+variable "vpn_shared_key" {
+  description = "Pre-shared key for the S2S tunnel. Set via TF_VAR_vpn_shared_key or a git-ignored .tfvars."
+  type        = string
+  sensitive   = true
+}
+
+variable "admin_username" {
+  description = "Admin username for lab VMs."
+  type        = string
+  default     = "azureuser"
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key used for all lab VMs."
+  type        = string
+}
+
+variable "tags" {
+  description = "Base tags for all dev resources."
+  type        = map(string)
+  default = {
+    environment = "dev"
+    project     = "azure-terraform-platform-lab"
+    owner       = "richieinthecloud"
+    managed_by  = "terraform"
+  }
+}
