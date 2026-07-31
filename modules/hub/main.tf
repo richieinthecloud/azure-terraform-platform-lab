@@ -161,3 +161,52 @@ resource "azurerm_virtual_network_gateway" "hub" {
     private_ip_address_allocation = "Dynamic"
   }
 }
+
+# Firewall rules - makes the forced-tunnel actually pass the traffic we intend.
+# East-West (Spoke-to-spoke / internal) is allowed via network rules; internet
+# egress is restricted to an approved FQDN allow-list via application rules. 
+# everything else is denied by the firewall's default behavior
+
+resource "azurerm_firewall_policy_rule_collection_group" "hub" {
+  name               = "rcg-hub-${var.env}"
+  firewall_policy_id = azurerm_firewall_policy.hub.id
+  priority           = 1000
+
+  # East to West: Allow traffic between internal ranges (Cloud + on-prem)
+  network_rule_collection {
+    name     = "Allow-East-West"
+    priority = 1000
+    action   = "Allow"
+
+    rule {
+      name                  = "Internal-Any"
+      protocols             = ["TCP", "UDP", "ICMP"]
+      source_addresses      = var.internal_address_spaces
+      destination_addresses = var.internal_address_spaces
+      destination_ports     = ["*"]
+    }
+  }
+
+  # Egress: allow HTTP/HTTPS only to an approved FQDN allow-list
+  application_rule_collection {
+    name     = "Allow-Egress-FQDNs"
+    priority = 2000
+    action   = "Allow"
+
+    rule {
+      name = "approved-FQDNs"
+
+      protocols {
+        type = "Http"
+        port = 80
+      }
+      protocols {
+        type = "Https"
+        port = 443
+      }
+
+      source_addresses  = var.internal_address_spaces
+      destination_fqdns = var.allowed_egress_fqdns
+    }
+  }
+}

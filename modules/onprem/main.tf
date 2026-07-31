@@ -73,7 +73,7 @@ resource "azurerm_network_security_group" "strongswan" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "22"
-    source_address_prefix      = var.admin_source_ip   # e.g. "203.0.113.10/32"
+    source_address_prefix      = var.admin_source_ip # e.g. "203.0.113.10/32"
     destination_address_prefix = "*"
   }
 }

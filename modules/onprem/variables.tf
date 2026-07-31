@@ -61,7 +61,7 @@ variable "vm_size" {
 
 variable "admin_source_ip" {
   description = "Source IP of the device trying to SSH into the on-prem VM."
-  type = string
+  type        = string
 }
 
 variable "tags" {

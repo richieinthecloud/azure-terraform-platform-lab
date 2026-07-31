@@ -44,6 +44,24 @@ variable "vpn_gateway_sku" {
   default     = "Basic"
 }
 
+variable "internal_address_spaces" {
+  description = "Internal ranges allows to talk East-West through the firewall (Cloud + on-prem)."
+  type        = list(string)
+  default     = ["10.0.0.0/8", "192.168.0.0/16"]
+}
+
+variable "allowed_egress_fqdns" {
+  description = "FQDN allow-list for outbound HTTP/HTTPS from internal ranges. Everything else is denied."
+  type        = list(string)
+  default = [
+    "azure.archive.ubuntu.com",
+    "security.ubuntu.com",
+    "*.ubuntu.com",
+    "github.com",
+    "*.github.com",
+  ]
+}
+
 variable "tags" {
   description = "Tags applied to hub resources."
   type        = map(string)
