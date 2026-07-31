@@ -39,6 +39,12 @@ variable "admin_source_ip" {
   type        = string
 }
 
+variable "allowed_egress_fqdns" {
+  description = "Approved outbound FQDNs for the dev firewall."
+  type        = list(string)
+  default     = ["azure.archive.ubuntu.com", "security.ubuntu.com", "github.com"]
+}
+
 variable "tags" {
   description = "Base tags for all dev resources."
   type        = map(string)

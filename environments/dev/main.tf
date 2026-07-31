@@ -20,11 +20,12 @@ locals {
 module "hub" {
   source = "../../modules/hub"
 
-  env             = var.env
-  location        = var.location
-  address_space   = "10.0.0.0/24"
-  vpn_gateway_sku = var.vpn_gateway_sku
-  tags            = var.tags
+  env                  = var.env
+  location             = var.location
+  address_space        = "10.0.0.0/24"
+  vpn_gateway_sku      = var.vpn_gateway_sku
+  allowed_egress_fqdns = var.allowed_egress_fqdns
+  tags                 = var.tags
 }
 
 # Spokes (depend on the hub, so the VPN gateway exists before gateway-transit
