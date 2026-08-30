@@ -42,14 +42,41 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Fetch the reviewed plan
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { data: prs } = await github.rest.repos
+              .listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner, repo: context.repo.repo,
+                commit_sha: context.sha,
+              });
+            if (prs.length === 0) {
+              core.setFailed('No PR associated with this commit — cannot locate a reviewed plan.');
+              return;
+            }
+            const name = `tfplan-${prs[0].head.sha}`;
+            const { data: arts } = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, name,
+            });
+            if (arts.total_count === 0) {
+              core.setFailed(`No plan artifact "${name}" found — did the PR check run and upload one?`);
+              return;
+            }
+            const dl = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner, repo: context.repo.repo,
+              artifact_id: arts.artifacts[0].id, archive_format: 'zip',
+            });
+            fs.writeFileSync('tfplan.zip', Buffer.from(dl.data));
+
+      - name: Unpack plan
+        run: |
+          unzip -o tfplan.zip -d environments/dev
+          test -f environments/dev/tfplan  
+
       - name: Terraform init
         run: terraform init
 
-      - name: Terraform Validate
-        run: terraform validate
-
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+      - name: Terraform Apply (reviewed plan)
+        run: terraform apply tfplan

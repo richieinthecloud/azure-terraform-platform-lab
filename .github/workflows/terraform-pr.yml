@@ -53,4 +53,42 @@ jobs:
         run: terraform validate
   
       - name: Terraform plan
-        run: terraform plan -out=tfplan
+        id: plan
+        run: terraform plan -out=tfplan -no-color
+
+      - name: Render plan to text
+        run: terraform show -no-color tfplan > plan.txt
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ github.event.pull_request.head.sha }}
+          path: environments/dev/tfplan
+          retention-days: 5
+
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let plan = fs.readFileSync('environments/dev/plan.txt', 'utf8');
+            const max = 60000;                       // GitHub comment cap is ~65k chars
+            if (plan.length > max) {
+              plan = plan.slice(0, max) +
+                '\n\n... output truncated — see the full plan in the workflow run.';
+            }
+            const marker = '#### Terraform Plan 📖';
+            const body = `${marker}\n<details><summary>Show plan</summary>\n\n` +
+              '```terraform\n' + plan + '\n```\n\n</details>\n\n' +
+              `*commit \`${{ github.event.pull_request.head.sha }}\` · @${{ github.actor }}*`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            const args = { owner: context.repo.owner, repo: context.repo.repo, body };
+            if (existing) {
+              await github.rest.issues.updateComment({ ...args, comment_id: existing.id });
+            } else {
+              await github.rest.issues.createComment({ ...args, issue_number: context.issue.number });
+            }
