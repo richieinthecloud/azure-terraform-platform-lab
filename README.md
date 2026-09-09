@@ -120,6 +120,44 @@ separate site at a glance.
 - **Private DNS:** the `privatelink.blob.core.windows.net` zone is linked to both
   spokes, so the storage account's FQDN resolves to its private endpoint IP.
 
+## Monitoring & alerting
+
+Everything observability-related lives in `modules/monitoring` and is fed by
+resource IDs from the environment root. Full audit, gaps and roadmap in
+[`docs/monitoring.md`](docs/monitoring.md).
+
+**Collected into Log Analytics (`log-hubspoke-<env>`, 30-day retention)**
+
+| Source | What arrives | Table |
+|---|---|---|
+| Azure Firewall | network / application rule hits, DNS proxy, all metrics | `AzureDiagnostics` |
+| VPN Gateway | gateway, tunnel state, IKE negotiation, route logs + metrics | `AzureDiagnostics` |
+| Azure Bastion | metrics only (audit logs need the Standard SKU) | `AzureMetrics` |
+| Storage (blob service) | every read/write/delete with caller IP + Transaction/Capacity metrics | `StorageBlobLogs` |
+| Subscription Activity Log | all 8 categories — who changed what, service/resource health | `AzureActivity` |
+| VMs *(opt-in)* | syslog (`auth`, `daemon` → StrongSwan `charon`, `kern`…), CPU/mem/disk/net, heartbeat | `Syslog`, `Perf`, `Heartbeat` |
+
+**Alerts → action group `ag-platform-<env>`** (email receivers optional)
+
+| Alert | Fires when | Sev |
+|---|---|---|
+| Firewall health | `FirewallHealth` avg < 100 % over 15 min | 1 |
+| S2S tunnel down | latest `TunnelDiagnosticLog` state is `Disconnected` | 1 |
+| Firewall SNAT | `SNATPortUtilization` avg > 80 % | 2 |
+| VM heartbeat *(opt-in)* | any agent silent > 10 min | 2 |
+| Firewall denies | > 50 `Deny` events in 15 min | 3 |
+| Service Health / Resource Health | Azure incident, or a resource goes Degraded/Unavailable | — |
+| Budget | 80 % actual / 100 % forecast of `monthly_budget_amount` | — |
+
+Nine saved KQL searches are published to the workspace under
+**Queries › Hub-Spoke Lab** (denied flows, top egress FQDNs, east-west flows,
+tunnel state, IKE events, private-endpoint access, admin operations, and two
+VM-level queries).
+
+**Not covered yet:** VNet flow logs, Bastion session audit (SKU), the on-prem
+LAN VM (no internet path for an agent), a workbook/dashboard, and the `prod`
+environment (empty scaffold).
+
 ## Repository structure
 
 ```
@@ -256,3 +294,26 @@ Monitoring coverage, gaps and the phased plan are in
 - **Key Vault** for the VPN pre-shared key (read via a data source).
 - **Azure Policy** governance (deny public IPs, require tags) and `tfsec`/
   `checkov` in the PR pipeline.
+
+## Changelog
+
+### 2026-09-09 — monitoring build-out (`feature/test`, not yet applied)
+
+- `modules/monitoring` now owns all observability: workspace, diagnostic
+  settings, action group, alerts, budget, saved searches, and an opt-in Linux
+  Data Collection Rule. The Firewall/Bastion diagnostic settings moved in from
+  the dev root with `moved {}` blocks (no destroy/recreate).
+- New diagnostics: VPN Gateway, storage blob service, subscription Activity Log.
+- New alerts: firewall health, firewall SNAT, firewall deny spike, S2S tunnel
+  disconnected, Service Health, Resource Health, VM heartbeat (opt-in).
+- New monthly subscription budget (80 % actual / 100 % forecast).
+- Nine saved KQL searches under **Hub-Spoke Lab**.
+- Opt-in VM guest monitoring (`enable_vm_monitoring`): Azure Monitor Agent on
+  `vm-app`, `vm-data` and the StrongSwan VM, plus a firewall network rule to
+  the `AzureMonitor` service tag. All three VMs gained a system-assigned
+  identity (unconditional; shows as an in-place update on the next plan).
+- New root variables: `alert_email_receivers`, `monthly_budget_amount`,
+  `enable_vm_monitoring`. New output `action_group_id`.
+- Added `environments/dev/terraform.tfvars.example` and `docs/monitoring.md`.
+- Validated with `terraform fmt` + `validate` (azurerm 4.79.0). Not yet
+  planned or applied against Azure — the PR pipeline is the next gate.
