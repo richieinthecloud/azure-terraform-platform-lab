@@ -171,7 +171,8 @@ environments/
   dev/                # composes hub + 2 spokes + onprem + monitoring + S2S + data
   prod/               # scaffolded (separate state key) — not yet built out
 .github/workflows/    # PR checks + apply pipelines (OIDC)
-docs/                 # monitoring coverage audit & improvement plan
+docs/                 # monitoring audit & plan; evidence runbook + captured demo evidence
+scripts/              # demo-traffic generator (runs on vm-app) + evidence capture (runs locally)
 ```
 
 ## CI/CD pipeline
@@ -251,6 +252,15 @@ itself part of the exercise.
 Monitoring coverage, gaps and the phased plan are in
 [`docs/monitoring.md`](docs/monitoring.md).
 
+### Proving the claims
+
+Each of the six behaviours above maps to a demo step, a KQL query and an
+expected result in [`docs/evidence/README.md`](docs/evidence/README.md).
+`scripts/generate-demo-traffic.sh` (run on `vm-app`) produces the traffic;
+`scripts/capture-evidence.sh` (run locally) writes the query output into a
+timestamped folder under `docs/evidence/`. The same document has the
+per-resource cost table for an 8-hour demo run (≈ $7–8 all-in at list price).
+
 ## Challenges & what I learned
 
 - **OIDC federated-credential subject mismatch.** GitHub lowercases the
@@ -315,5 +325,8 @@ Monitoring coverage, gaps and the phased plan are in
 - New root variables: `alert_email_receivers`, `monthly_budget_amount`,
   `enable_vm_monitoring`. New output `action_group_id`.
 - Added `environments/dev/terraform.tfvars.example` and `docs/monitoring.md`.
+- Added `docs/evidence/README.md` (claim → demo → query → expected-result
+  matrix, 8-hour cost estimate) and `scripts/` (demo-traffic generator +
+  evidence capture).
 - Validated with `terraform fmt` + `validate` (azurerm 4.79.0). Not yet
   planned or applied against Azure — the PR pipeline is the next gate.
