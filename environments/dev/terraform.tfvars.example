@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars (git-ignored) and fill in. Secrets can instead be
+# supplied as TF_VAR_* environment variables.
+
+ssh_public_key  = "ssh-ed25519 AAAA... you@laptop"
+admin_source_ip = "203.0.113.10/32" # your public IP, for SSH to the on-prem VPN VM
+# vpn_shared_key = "..."            # prefer: export TF_VAR_vpn_shared_key='...'
+
+# --- monitoring ---
+alert_email_receivers = ["you@example.com"] # [] = alerts visible in the portal only
+monthly_budget_amount = 100                 # 0 disables the budget alert
+enable_vm_monitoring  = false               # true = Azure Monitor Agent on the VMs (syslog/perf/heartbeat)

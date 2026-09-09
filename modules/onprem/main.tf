@@ -102,6 +102,11 @@ resource "azurerm_linux_virtual_machine" "strongswan" {
   network_interface_ids = [azurerm_network_interface.strongswan.id]
   tags                  = var.tags
 
+  # System-assigned identity so the Azure Monitor Agent can authenticate.
+  identity {
+    type = "SystemAssigned"
+  }
+
   admin_ssh_key {
     username   = var.admin_username
     public_key = var.ssh_public_key
@@ -126,6 +131,31 @@ resource "azurerm_linux_virtual_machine" "strongswan" {
     sku       = "server"
     version   = "latest"
   }
+}
+
+# Guest monitoring (opt-in): ships charon/IPsec syslog + perf counters to Log
+# Analytics. This VM has a public IP so it reaches Azure Monitor directly.
+# The LAN VM is deliberately left out: its only route is the tunnel and
+# StrongSwan doesn't NAT it to the internet, so the agent could never phone home.
+resource "azurerm_virtual_machine_extension" "strongswan_ama" {
+  count = var.enable_vm_monitoring ? 1 : 0
+
+  name                       = "AzureMonitorLinuxAgent"
+  virtual_machine_id         = azurerm_linux_virtual_machine.strongswan.id
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.0"
+  auto_upgrade_minor_version = true
+  automatic_upgrade_enabled  = true
+  tags                       = var.tags
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "strongswan" {
+  count = var.enable_vm_monitoring ? 1 : 0
+
+  name                    = "dcra-onprem-vpn-${var.env}"
+  target_resource_id      = azurerm_linux_virtual_machine.strongswan.id
+  data_collection_rule_id = var.data_collection_rule_id
 }
 
 # on-prem 'server' VM - represents a host in the datacenter LAN. No public IP;

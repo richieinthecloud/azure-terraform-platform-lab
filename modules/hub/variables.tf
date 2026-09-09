@@ -62,6 +62,12 @@ variable "allowed_egress_fqdns" {
   ]
 }
 
+variable "allow_azure_monitor_egress" {
+  description = "Add a network rule allowing HTTPS from internal ranges to the AzureMonitor service tag (required for the Azure Monitor Agent on spoke VMs)."
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "Tags applied to hub resources."
   type        = map(string)

@@ -34,6 +34,11 @@ output "data_storage_account_name" {
 }
 
 output "log_analytics_workspace_name" {
-  description = "Log Analytics workspace collecting Firewall/Bastion diagnostics."
+  description = "Log Analytics workspace collecting Firewall, Bastion, VPN gateway, storage and Activity Log diagnostics."
   value       = module.monitoring.workspace_name
+}
+
+output "action_group_id" {
+  description = "Action group that alerts and the budget notify."
+  value       = module.monitoring.action_group_id
 }

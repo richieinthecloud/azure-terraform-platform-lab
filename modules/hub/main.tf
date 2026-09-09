@@ -187,6 +187,26 @@ resource "azurerm_firewall_policy_rule_collection_group" "hub" {
     }
   }
 
+  # Azure Monitor Agent egress (opt-in). The spoke VMs sit behind the forced
+  # tunnel, so without this the agent can't reach the ingestion endpoints.
+  # Uses the AzureMonitor service tag rather than a hand-maintained FQDN list.
+  dynamic "network_rule_collection" {
+    for_each = var.allow_azure_monitor_egress ? [1] : []
+    content {
+      name     = "Allow-Azure-Monitor"
+      priority = 1100
+      action   = "Allow"
+
+      rule {
+        name                  = "AzureMonitor-HTTPS"
+        protocols             = ["TCP"]
+        source_addresses      = var.internal_address_spaces
+        destination_addresses = ["AzureMonitor"]
+        destination_ports     = ["443"]
+      }
+    }
+  }
+
   # Egress: allow HTTP/HTTPS only to an approved FQDN allow-list
   application_rule_collection {
     name     = "Allow-Egress-FQDNs"

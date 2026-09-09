@@ -26,6 +26,10 @@ module "hub" {
   vpn_gateway_sku      = var.vpn_gateway_sku
   allowed_egress_fqdns = var.allowed_egress_fqdns
   tags                 = var.tags
+
+  # Lets the Azure Monitor Agent on spoke VMs reach its ingestion endpoints
+  # through the forced tunnel. No-op unless VM monitoring is enabled.
+  allow_azure_monitor_egress = var.enable_vm_monitoring
 }
 
 # Spokes (depend on the hub, so the VPN gateway exists before gateway-transit
@@ -89,6 +93,9 @@ module "onprem" {
   ssh_public_key          = var.ssh_public_key
   admin_source_ip         = var.admin_source_ip
   tags                    = var.tags
+
+  enable_vm_monitoring    = var.enable_vm_monitoring
+  data_collection_rule_id = module.monitoring.data_collection_rule_id
 }
 
 # S2S wiring: local network gateway (on-prem representation) + connection. 
@@ -118,8 +125,12 @@ resource "azurerm_virtual_network_gateway_connection" "onprem" {
 }
 
 # ---------------------------------------------------------------------------
-# Monitoring — Log Analytics workspace + diagnostic settings that stream the
-# hub Firewall and Bastion logs/metrics into it (the "Azure Monitor" box).
+# Monitoring — Log Analytics workspace, diagnostic settings, alerts, budget
+# and saved searches all live in the monitoring module (the "Azure Monitor"
+# box). See docs/monitoring.md for what is and isn't covered.
+#
+# It's declared after the storage account only so it can reference its ID;
+# Terraform orders the actual creation by dependency, not by position.
 # ---------------------------------------------------------------------------
 module "monitoring" {
   source = "../../modules/monitoring"
@@ -127,38 +138,27 @@ module "monitoring" {
   env      = var.env
   location = var.location
   tags     = var.tags
+
+  firewall_id        = module.hub.firewall_id
+  bastion_id         = module.hub.bastion_id
+  vpn_gateway_id     = module.hub.vpn_gateway_id
+  storage_account_id = azurerm_storage_account.data.id
+
+  alert_email_receivers = var.alert_email_receivers
+  monthly_budget_amount = var.monthly_budget_amount
+  enable_vm_monitoring  = var.enable_vm_monitoring
 }
 
-resource "azurerm_monitor_diagnostic_setting" "firewall" {
-  name                       = "diag-firewall"
-  target_resource_id         = module.hub.firewall_id
-  log_analytics_workspace_id = module.monitoring.workspace_id
-
-  # "allLogs" captures every log category the resource supports, so it keeps
-  # working even as Azure adds/renames Firewall log categories.
-  enabled_log {
-    category_group = "allLogs"
-  }
-
-  enabled_metric {
-    category = "AllMetrics"
-  }
+# The Firewall/Bastion diagnostic settings used to be declared here in the
+# root; these keep their state (no destroy/recreate) after the move.
+moved {
+  from = azurerm_monitor_diagnostic_setting.firewall
+  to   = module.monitoring.azurerm_monitor_diagnostic_setting.firewall
 }
 
-resource "azurerm_monitor_diagnostic_setting" "bastion" {
-  name                       = "diag-bastion"
-  target_resource_id         = module.hub.bastion_id
-  log_analytics_workspace_id = module.monitoring.workspace_id
-
-  # NOTE: BastionAuditLogs require the Standard SKU. On Basic Bastion this
-  # setting still deploys but emits little/no log data (metrics only).
-  enabled_log {
-    category_group = "allLogs"
-  }
-
-  enabled_metric {
-    category = "AllMetrics"
-  }
+moved {
+  from = azurerm_monitor_diagnostic_setting.bastion
+  to   = module.monitoring.azurerm_monitor_diagnostic_setting.bastion
 }
 
 # data service - Storage account reachable ONLY over a private endpoint
@@ -249,6 +249,11 @@ resource "azurerm_linux_virtual_machine" "app" {
   network_interface_ids = [azurerm_network_interface.app.id]
   tags                  = var.tags
 
+  # System-assigned identity so the Azure Monitor Agent can authenticate.
+  identity {
+    type = "SystemAssigned"
+  }
+
   admin_ssh_key {
     username   = var.admin_username
     public_key = var.ssh_public_key
@@ -289,6 +294,11 @@ resource "azurerm_linux_virtual_machine" "data" {
   network_interface_ids = [azurerm_network_interface.data.id]
   tags                  = var.tags
 
+  # System-assigned identity so the Azure Monitor Agent can authenticate.
+  identity {
+    type = "SystemAssigned"
+  }
+
   admin_ssh_key {
     username   = var.admin_username
     public_key = var.ssh_public_key
@@ -305,4 +315,38 @@ resource "azurerm_linux_virtual_machine" "data" {
     sku       = "server"
     version   = "latest"
   }
+}
+
+# ---------------------------------------------------------------------------
+# Guest monitoring for the spoke VMs (opt-in via enable_vm_monitoring).
+# Azure Monitor Agent + association to the Linux Data Collection Rule, which
+# ships syslog + perf counters (and a Heartbeat) to Log Analytics.
+# ---------------------------------------------------------------------------
+
+locals {
+  monitored_vms = var.enable_vm_monitoring ? {
+    app  = azurerm_linux_virtual_machine.app.id
+    data = azurerm_linux_virtual_machine.data.id
+  } : {}
+}
+
+resource "azurerm_virtual_machine_extension" "ama" {
+  for_each = local.monitored_vms
+
+  name                       = "AzureMonitorLinuxAgent"
+  virtual_machine_id         = each.value
+  publisher                  = "Microsoft.Azure.Monitor"
+  type                       = "AzureMonitorLinuxAgent"
+  type_handler_version       = "1.0"
+  auto_upgrade_minor_version = true
+  automatic_upgrade_enabled  = true
+  tags                       = var.tags
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "vm" {
+  for_each = local.monitored_vms
+
+  name                    = "dcra-${each.key}-${var.env}"
+  target_resource_id      = each.value
+  data_collection_rule_id = module.monitoring.data_collection_rule_id
 }

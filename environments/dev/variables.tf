@@ -45,6 +45,24 @@ variable "allowed_egress_fqdns" {
   default     = ["azure.archive.ubuntu.com", "security.ubuntu.com", "github.com"]
 }
 
+variable "alert_email_receivers" {
+  description = "Email addresses for alert + budget notifications. Leave empty for portal-only alerts."
+  type        = list(string)
+  default     = []
+}
+
+variable "monthly_budget_amount" {
+  description = "Monthly subscription budget for the cost alert (billing currency). 0 disables it."
+  type        = number
+  default     = 100
+}
+
+variable "enable_vm_monitoring" {
+  description = "Install the Azure Monitor Agent on lab VMs (syslog + perf + heartbeat) and open AzureMonitor egress on the firewall. Adds a little ingestion cost."
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   description = "Base tags for all dev resources."
   type        = map(string)

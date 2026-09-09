@@ -38,8 +38,12 @@ generate the traffic that demonstrates the behaviours below.
 5. **Hybrid connectivity** — a host in the simulated on-prem datacenter reaches
    Azure spokes over an **S2S IPsec tunnel**, with spokes routing to on-prem
    through the hub gateway (**gateway transit**).
-6. **Observability** — Firewall and Bastion stream diagnostics to a **Log
-   Analytics** workspace (Azure Monitor).
+6. **Observability** — Firewall, Bastion, VPN Gateway, storage and the
+   subscription Activity Log stream diagnostics to a **Log Analytics**
+   workspace, with **alerts** (firewall health, SNAT, tunnel down, service /
+   resource health), a **budget guard-rail** and saved KQL queries. Optional
+   guest-level VM telemetry via the Azure Monitor Agent. See
+   [`docs/monitoring.md`](docs/monitoring.md) for the coverage audit and plan.
 
 ## Architecture
 
@@ -68,7 +72,7 @@ flowchart TB
         PE["Private Endpoint"] --- DATA["Storage (private only)"]
     end
 
-    LOG["Log Analytics\n(Azure Monitor)"]
+    LOG["Log Analytics\n(Azure Monitor)\n+ alerts · budget · action group"]
 
     SW <-->|S2S IPsec tunnel| INET <--> VGW
     Hub <-->|peering + gateway transit| SpokeApp
@@ -79,6 +83,9 @@ flowchart TB
     VM1 -->|private DNS| PE
     FW -.->|diagnostics| LOG
     BAS -.->|diagnostics| LOG
+    VGW -.->|tunnel / IKE logs| LOG
+    DATA -.->|blob access logs| LOG
+    SW -.->|syslog (opt-in AMA)| LOG
 ```
 
 The on-prem VNet is **not peered** to Azure — its only path is the encrypted
@@ -121,12 +128,12 @@ modules/
   hub/                # hub VNet, Firewall (+ policy rules), Bastion, VPN Gateway
   spoke/              # reusable spoke: VNet, NSG, UDR, gateway-transit peering
   onprem/             # simulated datacenter: StrongSwan S2S device + LAN VM
-  monitoring/         # Log Analytics workspace (Azure Monitor sink)
+  monitoring/         # Log Analytics + diagnostic settings, alerts, action group, budget, saved queries
 environments/
   dev/                # composes hub + 2 spokes + onprem + monitoring + S2S + data
   prod/               # scaffolded (separate state key) — not yet built out
 .github/workflows/    # PR checks + apply pipelines (OIDC)
-docs/                 # hub-spoke design & decision record
+docs/                 # monitoring coverage audit & improvement plan
 ```
 
 ## CI/CD pipeline
@@ -177,6 +184,14 @@ terraform apply
 Secrets live in a git-ignored `terraform.tfvars` (or `TF_VAR_*` env vars) — the
 `*.tfvars` pattern is in `.gitignore`.
 
+Monitoring knobs (all optional, see `terraform.tfvars.example`):
+
+| Variable | Default | Effect |
+|---|---|---|
+| `alert_email_receivers` | `[]` | Who gets alert + budget emails (empty = portal only) |
+| `monthly_budget_amount` | `100` | Monthly spend alert at 80 % actual / 100 % forecast (`0` disables) |
+| `enable_vm_monitoring` | `false` | Azure Monitor Agent on the VMs: syslog (incl. StrongSwan `charon`), perf, heartbeat alert |
+
 ## Cost notes (self-funded lab)
 
 Basic SKUs throughout (Firewall Basic, Bastion Basic, VPN Gateway Basic, `B1s`
@@ -195,7 +210,8 @@ itself part of the exercise.
   reproducible by anyone, no CGNAT/dynamic-IP/router dependencies, nothing
   touching a real home LAN.
 
-Full rationale in [`docs/hub-spoke-design.md`](docs/hub-spoke-design.md).
+Monitoring coverage, gaps and the phased plan are in
+[`docs/monitoring.md`](docs/monitoring.md).
 
 ## Challenges & what I learned
 
@@ -232,6 +248,8 @@ Full rationale in [`docs/hub-spoke-design.md`](docs/hub-spoke-design.md).
 
 ## Roadmap
 
+- Monitoring phase 3/4 (VNet flow logs, workbook, drift alert on non-pipeline
+  callers) — see [`docs/monitoring.md`](docs/monitoring.md).
 - Build out the `prod` environment (separate state, prod values).
 - **BGP** over the S2S tunnel (dynamic routing) — requires VpnGw1+.
 - **Point-to-Site** user VPN reusing the hub gateway.

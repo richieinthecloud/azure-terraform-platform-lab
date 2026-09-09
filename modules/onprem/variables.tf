@@ -69,3 +69,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "enable_vm_monitoring" {
+  description = "Install the Azure Monitor Agent on the StrongSwan VM and associate it with data_collection_rule_id."
+  type        = bool
+  default     = false
+}
+
+variable "data_collection_rule_id" {
+  description = "Data Collection Rule ID for the Azure Monitor Agent. Required when enable_vm_monitoring is true."
+  type        = string
+  default     = null
+}
